@@ -7,14 +7,13 @@ export type Work = [time:number, data:string, user:User];
 export type Scan = {need_dirty:number[], make_dirty:number[], need_empty:number[], make_empty:number[], due_date?:Date}
 
 
-
 export type GraphBuilder=
 <
     Users extends Record<string, string>,
     Roles extends Record<string, [ name:string, ...users:Array<keyof Users>]>,
     Parts extends Record<string, [ name:string, loop?:"loop"] >,
-    PartKeys = keyof Parts,
-    Desks extends Record<string, [ name:string, roles:Array<keyof Roles>, need:{[K in PartKeys]?: number}, ...make:Array<PartKeys>]>,
+    ThemKeys = keyof Parts,
+    Desks extends Record<string, [ name:string, roles:Array<keyof Roles>, need:{[K in ThemKeys]?: number}, ...make:Array<ThemKeys>]>,
 >
 (
     params:{
