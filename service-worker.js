@@ -21,12 +21,15 @@ async function Interceptor(event)
   const pathname = url.pathname.substring(1);
   let parts = pathname.split("/");
 
-  if(parts[0] == "user-data")
+  const check = parts.indexOf("user-data");
+  console.log(parts, check); 
+  if(check > -1)
   {
     console.log("intercept:", pathname);
 
     const handle = await FSAccess.getDirectoryHandle();
-    const text = await FSAccess.Read(handle, parts.slice(1));
+    const path = parts.slice(check+1);
+    const text = await FSAccess.Read(handle, path);
     if(text)
     {
       console.log("successful intercept:", pathname);
