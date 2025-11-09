@@ -88,22 +88,22 @@ export async function Write(handle, parts, text)
 }
 
 
+/** @type {(dirHandle:FileSystemDirectoryHandle, parentFolder:string, parts:Record<string, Date>)=>Promise<Record<string, Date>>} */
+async function findJsonFilesWithModifiedDates(dirHandle, parentFolder="", results = {})
+{
 
-// // 🔐 Check or request permission
-// async function verifyPermission(handle, mode = 'readwrite') {
-//   const opts = { mode };
-//   if ((await handle.queryPermission(opts)) === 'granted') return true;
-//   if ((await handle.requestPermission(opts)) === 'granted') return true;
-//   return false;
-// }
-// 
-// 
-// // 📌 Request persistent storage
-// async function ensurePersistentStorage() {
-//   if (navigator.storage && navigator.storage.persist) {
-//     const granted = await navigator.storage.persist();
-//     console.log(granted
-//       ? '✅ Persistent storage granted.'
-//       : '⚠️ Storage may be cleared under pressure.');
-//   }
-// }
+  const updatedParentFolder = parentFolder +"/"+ dirHandle.name;
+  for await (const [name, handle] of dirHandle.entries())
+  {
+    if (handle.kind === 'file' && name.endsWith('.json'))
+    {
+      const file = await handle.getFile();
+      results[updatedParentFolder + "/" + file.name] = new Date(file.lastModified);
+    }
+    else if (handle.kind === 'directory')
+    {
+      await findJsonFilesWithModifiedDates(handle, updatedParentFolder, results);
+    }
+  }
+  return results;
+}

@@ -24,10 +24,10 @@ Setup(
         desk:{
             d1:["Write page metas",   ["admin", "write"], {                }, "p1", "p2"],
             d2:["Build Page preview", ["admin", "dev"  ], {p1:1, p2:1, p5:4}, "p3", "p4"],
-            d3:["Proof Page",         ["admin", "write"], {p3:1,         }, "p5"      ]
+            d3:["Proof Page",         ["admin", "write"], {p3:1,           }, "p5"      ]
         },
         pass:{
-            pass_01:["January"],
+            pass_01:["Q4 Project", new Date("Nov 1, 2025")],
             //pass_02:["February"],
             //pass_03:["March"],
             //pass_04:["April"],

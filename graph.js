@@ -1,4 +1,4 @@
-/** @import * as TYPES from "./graph.js" */
+/** @import * as TYPES from "./graph.d.ts" */
 import * as FSAccess from "./store-directory-handle.js";
 
 export const noop = "no-op";
@@ -91,9 +91,11 @@ export function Room({user, role, part, desk, pass})
     const PassList = pass;
     for(let passID in pass)
     {
+        
+        const [name, date] = pass[passID]
         /** @type {TYPES.Pass} */
         const passObj = {
-            name: pass[passID][0],
+            name, date,
             id:passID,
             path:passID,
             async load(){
@@ -308,6 +310,12 @@ Loop parts:
     {
         stamp = estMax;
     }
+
+    if(desk.need.length === 0)
+    {
+        stamp = pass.date;
+    }
+
     desk.pass.set(pass, {need_dirty:dirtyNeed, make_dirty:dirtyMake, need_empty:emptyNeed, make_empty:emptyMake, due_date:isFinite(stamp) ? new Date(stamp) : undefined})
 };
 
