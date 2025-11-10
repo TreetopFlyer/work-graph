@@ -88,8 +88,8 @@ function Parts(inParts, inPasses)
 
 //const deskRender = van.state(0);
 
-/** @type {(part:TYPES.Part, pass:TYPES.Pass, closeHandler:()=>void)=>HTMLElement} */
-function PartEditor(part, pass, closeHandler)
+/** @type {(part:TYPES.Part, pass:TYPES.Pass, closeHandler:(parent:HTMLElement)=>void, historyOnly:boolean)=>HTMLElement} */
+function PartEditor(part, pass, closeHandler, historyOnly=false)
 {
     const partPass = part.pass?.get(pass);
 
@@ -117,6 +117,20 @@ function PartEditor(part, pass, closeHandler)
         else
         {
             return "";
+        }
+    }
+
+    for(const n of part.need)
+    {
+        for(const r of n.role)
+        {
+            for(const u of r.user)
+            {
+                if(u == loggedIn.rawVal)
+                {
+                    break;
+                }
+            }
         }
     }
 
@@ -156,7 +170,7 @@ function PartEditor(part, pass, closeHandler)
 
     const self = DOM.div(
         upper,
-        ()=>DOM.button({onclick(e){e.stopPropagation(); closeHandler(this.parentElement)}}, "close"),
+        ()=>DOM.button({onclick(e){e.stopPropagation(); closeHandler(self)}}, "close"),
         DOM.div(
             ()=>{
                 if(partPass)
@@ -166,10 +180,45 @@ function PartEditor(part, pass, closeHandler)
                 return "(no data yet)";
             }
         ),
-        lower,
+        historyOnly ? "" : lower,
     );
 
     return self;
+}
+
+/** @type {(className:string, value:string|undefined, part:TYPES.Part, pass:TYPES.Pass, historyOnly:boolean)=>HTMLElement} */
+function PartCell(className, value, part, pass, historyOnly=false)
+{
+    const attr = "data-editing";
+
+    /** @type {(editor:HTMLElement)=>void} */
+    function close(editor){
+        editor.remove();
+        self.innerHTML = value||"";
+        self.setAttribute(attr, "false");
+    }   
+
+    /** @type {(this:HTMLElement)=>void} */
+    function onclick()
+    {    
+        const check = self.getAttribute(attr);
+        if(check !== "true")
+        {
+            self.innerHTML = "";
+            self.setAttribute(attr, "true");
+            self.appendChild(PartEditor(part, pass, close, historyOnly));
+        }
+    }
+    
+    const self = Div.Part(
+        {
+            onclick,
+            class: className
+        },
+        value
+    )
+
+    return DOM.td(self);
 }
 
 /** @type {(inDesks:Record<string, TYPES.Desk>)=>HTMLElement} */
@@ -207,6 +256,7 @@ function Desks(inDesks)
                 // at least one but not all need fields are empty
                 const caution = scan.need_empty.length>0 && scan.need_empty.length<desk.need.length;
 
+
                 work.push(DOM.tr(
                     DOM.td(pass.name),
                     desk.need.map((part, index, array)=>
@@ -215,28 +265,23 @@ function Desks(inDesks)
                         if(!partPass){ return null }
                         const latest = partPass.work.find(t=>t[0] == partPass.time)?.[1];
 
-                        const attributes = {};
+                        let className = "";
 
                         if(latest)
                         {
-                            attributes.class = Tag("PartGood")
+                            className = Tag("PartGood")
                         }
                         else
                         {
-                            attributes.class = Tag("PartEmpty")
+                            className = Tag("PartEmpty")
                         }
 
                         if(scan.need_dirty.includes(index))
                         {
-                            attributes.class = Tag("PartDirty")
+                            className = Tag("PartDirty")
                         }
 
-                        return DOM.td(
-                            Div.Part(
-                                attributes,
-                                latest
-                            )
-                        );
+                        return PartCell(className, latest, part, pass, true);
                     }),
                     DOM.td(
                         Div.Icon("⇉"),
@@ -251,31 +296,15 @@ function Desks(inDesks)
                         if(!partPass){ return null }
                         const latest = partPass.work.find(t=>t[0] == partPass.time)?.[1];
                         
-                        const attr = "data-editing"
-                        function close(editor){
-                            editor.remove();
-                            this.setAttribute(attr, "false");
-                        }
+                        let className = "";
 
-                        const attributes = {
-                            onclick(){
-                                
-                                const check = this.getAttribute(attr);
-                                if(check !== "true")
-                                {
-                                    this.setAttribute(attr, "true");
-                                    this.appendChild(PartEditor(part, pass, close.bind(this)));
-                                }
-                            }
-                        };
-                        
                         if(latest)
                         {
-                            attributes.class = Tag("PartGood")
+                            className = Tag("PartGood")
                         }
                         else
                         {
-                            attributes.class = Tag("PartEmpty")
+                            className = Tag("PartEmpty")
                         }
 
                         if( (desk.need.length==0 && !latest) || scan.make_dirty.includes(index))
@@ -283,20 +312,16 @@ function Desks(inDesks)
                             
                             if(!latest && caution)
                             {
-                                attributes.class = Tag("PartCaution")
+                                className = Tag("PartCaution")
                             }
                             else
                             {
-                                attributes.class = Tag("PartDirty");
+                                className = Tag("PartDirty");
                             }
                         }   
 
-                        return DOM.td(
-                            Div.Part(
-                                attributes,
-                                latest
-                            )
-                        );
+                        return PartCell(className, latest, part, pass);
+
                     }),
                 ))
             }
@@ -308,9 +333,9 @@ function Desks(inDesks)
                     DOM.thead(
                         DOM.tr(
                             DOM.th(),
-                            desk.need.map((part, index)=>DOM.th(part.name)),
+                            desk.need.map((part)=>DOM.th(part.name)),
                             DOM.th("→"),
-                            desk.make.map((part, index)=>DOM.th(part.name))
+                            desk.make.map((part)=>DOM.th(part.name))
                         )
                     ),
                     work
