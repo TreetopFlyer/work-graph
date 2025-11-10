@@ -45,7 +45,7 @@ export function Room({user, role, part, desk, pass})
     const DeskList = desk;
     for(let deskId in desk)
     {
-        const [name, roleIDs, needObj, ...makePartIDs] = desk[deskId];
+        let [name, roleIDs, needObj, ...makePartIDs] = desk[deskId];
         /** @type {TYPES.Part[]}*/ const need =[];
         /** @type {number[]}*/ const time =[];
 
@@ -59,6 +59,17 @@ export function Room({user, role, part, desk, pass})
             role:[],
             pass:new Map()
         };
+
+        if(makePartIDs.length == 0)
+        {
+            for(const key in needObj)
+            {
+                const value = needObj[key];
+                makePartIDs.push(key);
+                time.push(value);
+            }
+            needObj = {};
+        }
 
         for(const partId in needObj)
         {   
@@ -233,6 +244,7 @@ const Scan =(desk, pass)=>
     let estMax = -Infinity;
     let estSum = 0;
 
+    const hoursToMS = 1000 * 60 * 60
 /*
 
 Loop parts:
@@ -297,7 +309,7 @@ Loop parts:
 
             // estimation
             if(time < estMin) estMin = time;
-            const allottedTime = desk.time[i] * 1000 * 60 * 60;
+            const allottedTime = desk.time[i] * hoursToMS;
             const projectedTime = time + allottedTime;
             estSum += allottedTime;
             if(projectedTime > estMax) estMax = projectedTime;
@@ -313,10 +325,17 @@ Loop parts:
 
     if(desk.need.length === 0)
     {
-        stamp = pass.date;
+        const allotted = desk.time.reduce((a,b)=>a+b)*hoursToMS;
+        stamp = pass.date.getTime() + allotted;
     }
 
-    desk.pass.set(pass, {need_dirty:dirtyNeed, make_dirty:dirtyMake, need_empty:emptyNeed, make_empty:emptyMake, due_date:isFinite(stamp) ? new Date(stamp) : undefined})
+    desk.pass.set(pass, {
+        need_dirty:dirtyNeed,
+        make_dirty:dirtyMake,
+        need_empty:emptyNeed,
+        make_empty:emptyMake,
+        due_date:isFinite(stamp) ? new Date(stamp) : undefined
+    })
 };
 
 globalThis.Setup = MassBuild;
