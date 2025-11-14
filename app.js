@@ -47,15 +47,19 @@ async function LoadHandleFiles()
     }
 }
 
+
+
 /** @type {Van.State<Record<string, TYPES.GraphParts>>} */
 const rooms = van.state({});
 let handle = await FSHandle.getDirectoryHandle();
 await LoadHandleFiles();
 
 
+/** @type {Van.State<string>} */
+const loggedIn = van.state("", "login");
 
-/** @type {Van.State<TYPES.User|false>} */
-const loggedIn = van.state(false);
+/** @type {TYPES.User|false} */
+let realUser = false;
 
 const blocking = van.state(false);
 
@@ -126,7 +130,7 @@ function PartEditor(part, pass, closeHandler, historyOnly=false)
         {
             for(const u of r.user)
             {
-                if(u == loggedIn.rawVal)
+                if(u.id == loggedIn.rawVal)
                 {
                     break;
                 }
@@ -149,10 +153,10 @@ function PartEditor(part, pass, closeHandler, historyOnly=false)
                     textarea,
                     DOM.button({
                         onclick(){
-                            if(loggedIn.rawVal && partPass)
+                            if(realUser && partPass)
                             {
                                 blocking.val = true;
-                                partPass.make(loggedIn.rawVal, textarea.value).then(()=>{
+                                partPass.make(realUser, textarea.value).then(()=>{
                                     blocking.val = false;
                                     //deskRender.val++;
                                 })
@@ -237,7 +241,7 @@ function Desks(inDesks)
                 let userInRole = false;
                 for(const role of desk.role)
                 {
-                    if(role.user.includes(loggedIn.val))
+                    if(role.user.includes(realUser))
                     {
                         userInRole = true;
                     }
@@ -358,14 +362,33 @@ function Room(room_id, graphParts)
         Div.Plain("Users:"),
         Div.PartGroup(
             Object.entries(graphParts.User).map(([user_id, user])=>{
+
+                if(loggedIn.val == user.id)
+                {
+                    realUser = user;
+                }
+
                 return Div.Part(
                         DOM.div.Plain(user.name),
                         ()=>{
+
                             return DOM.button.Plain(
-                                {onclick(){
-                                    loggedIn.val = (loggedIn.val == user) ? false : user;
-                                }},
-                                loggedIn.val == user ? "this is me" : "impersonate"
+                                {
+                                    onclick()
+                                    {
+                                        if(loggedIn.val == user.id)
+                                        {
+                                            loggedIn.val = "";
+                                            realUser = false;
+                                        }
+                                        else
+                                        {
+                                            loggedIn.val = user.id;
+                                            realUser = user;
+                                        }
+                                    }
+                                },
+                                loggedIn.val == user.id ? "this is me" : "impersonate"
                             )
                         },
                 )
@@ -383,7 +406,6 @@ function Room(room_id, graphParts)
             rerender.val;
             return showDesks.val ? Desks(graphParts.Desk) : Parts(graphParts.Part, graphParts.Pass);
         },
-
 
         ()=>{
             return blocking.val ? Div.BlockScreen() : null
